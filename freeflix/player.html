@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>HLS Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body {
+      background-color: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    video {
+      width: 80%;
+      border-radius: 10px;
+    }
+    .backbtn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: 2rem;
+      padding: 1rem;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 26px;
+      border-radius: 0.3rem;
+      background-color: #e50914;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="backbtn" onclick="window.location.href = 'index.html'">Back</div>
+  <video id="video" controls autoplay></video>
+
+  <script>
+    function setCookie(name, value, days = 365) {
+      const expires = new Date(Date.now() + days * 86400000).toUTCString();
+      document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
+    function getCookie(name) {
+      const cookies = document.cookie.split(";").map(cookie => cookie.trim());
+      for (const cookie of cookies) {
+        const [key, value] = cookie.split("=");
+        if (decodeURIComponent(key) === name) return decodeURIComponent(value);
+      }
+      return null;
+    }
+
+    const video = document.getElementById('video');
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoSrc = urlParams.get('src');
+    let filename = videoSrc.split("/")[videoSrc.split("/").length-1].replace(".m3u8", "")
+    console.log(filename)
+    console.log(getCookie(encodeURIComponent(filename)))
+    if (!getCookie(encodeURIComponent(filename))) setCookie(encodeURIComponent(filename), "viewed;0") 
+
+    video.addEventListener("loadedmetadata", () => {
+      video.currentTime = getCookie(encodeURIComponent(filename)).split(";")[1]
+      const toWatch = Math.round(video.duration) * 0.9
+      var currentWatched = 0
+      setInterval(() => {
+        currentWatched = Math.round(video.currentTime)
+        setCookie(encodeURIComponent(filename), getCookie(encodeURIComponent(filename)).split(";")[0]+";"+currentWatched);
+        if (currentWatched >= toWatch) {
+          setCookie(encodeURIComponent(filename), "watched;"+currentWatched)
+        }
+      }, 3000)
+    })
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(videoSrc);
+      hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = videoSrc;
+    }
+  </script>
+</body>
+</html>
